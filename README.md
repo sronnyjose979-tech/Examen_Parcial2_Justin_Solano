@@ -52,18 +52,20 @@ Credenciales: `docente@ucr.ac.cr` · `Examen2026!`
 
 Cada comentario `TODO` describe exactamente lo que se espera. Los archivos marcados **YA IMPLEMENTADO** no se evalúan.
 
-## Evidencia (M8)
-
-Guarde en `app/docs/evidencia-android.png` una captura de **su** app corriendo en el emulador,
-en la pestaña **Perfil** (debe verse *Plataforma: android*), y complete:
-
-- Carné:
-- appId:
-- Versión de Node / Ionic CLI / Capacitor (`node -v`, `ionic -v`, `npx cap -V`):
-- ¿Se generó el APK de depuración? (sí/no):
-
 ## Reglas
 
 - IA permitida en la Parte A. **Usted responde por cada línea de su repositorio**, la haya escrito usted o una herramienta: la Parte B pregunta por *su* código.
 - Se califica el último *commit* enviado antes de las **11:00**.
 - No modifique `backend/` ni los archivos marcados YA IMPLEMENTADO.
+
+## Evidencia (M8)
+
+Guarde en `app/docs/evidencia-android.png` una captura de su app corriendo en el emulador, en la pestaña **Perfil** (debe verse **Plataforma: android**).
+
+- Carné: C4L936
+- appId: cr.ac.ucr.if0009.c4l936
+- appName: Préstamos Solano
+- Node: v24.20.0
+- Ionic CLI: 7.2.1
+- Capacitor: 8.6.2
+- ¿Se generó el APK de depuración?: sí
