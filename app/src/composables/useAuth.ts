@@ -26,7 +26,10 @@ export const obtenerToken = () => token.value;
 
 /** TODO [M2] Borrar token y usuario de la memoria (refs) y del almacenamiento cifrado. */
 export async function olvidarSesion() {
-  // TODO [M2]
+  token.value = null;
+  usuario.value = null;
+  tokenCargado = true;
+  await Promise.all([SecureStorage.remove(CLAVE_TOKEN), SecureStorage.remove(CLAVE_USUARIO)]);
 }
 
 export function useAuth() {
@@ -41,8 +44,16 @@ export function useAuth() {
    *  No atrape el error: LoginPage.vue ya muestra los 422.
    */
   async function login(email: string, password: string) {
-    void [email, password, api, Device, SecureStorage, CLAVE_TOKEN, CLAVE_USUARIO];
-    throw new Error('TODO [M2] login sin implementar');
+    const info = await Device.getInfo();
+    const deviceName = `${info.platform} ${info.model}`.slice(0, 60);
+    const respuesta = await api<{ token: string; usuario: Usuario }>('/login', {
+      method: 'POST', body: { email, password, device_name: deviceName },
+    });
+    await SecureStorage.set(CLAVE_TOKEN, respuesta.token);
+    await SecureStorage.set(CLAVE_USUARIO, JSON.stringify(respuesta.usuario));
+    token.value = respuesta.token;
+    usuario.value = respuesta.usuario;
+    tokenCargado = true;
   }
 
   /**
@@ -51,7 +62,22 @@ export function useAuth() {
    *  Debe ejecutarse una sola vez (use la bandera tokenCargado).
    */
   async function cargarToken() {
-    void tokenCargado;
+    if (tokenCargado) return;
+    tokenCargado = true;
+    try {
+      const [tokenGuardado, usuarioGuardado] = await Promise.all([
+        SecureStorage.get(CLAVE_TOKEN), SecureStorage.get(CLAVE_USUARIO),
+      ]);
+      if (typeof tokenGuardado === 'string' && typeof usuarioGuardado === 'string') {
+        // Se recupera el objeto a partir del JSON guardado al iniciar sesión.
+        usuario.value = JSON.parse(usuarioGuardado) as Usuario;
+        token.value = tokenGuardado;
+      } else {
+        await olvidarSesion();
+      }
+    } catch {
+      await olvidarSesion();
+    }
   }
 
   /**
@@ -60,7 +86,13 @@ export function useAuth() {
    *  aunque la API falle (sin red o token vencido).
    */
   async function cerrarSesion() {
-    // TODO [M2]
+    try {
+      await api('/logout', { method: 'POST' });
+    } catch {
+      // Aunque no haya red, la persona debe poder salir de la app.
+    } finally {
+      await olvidarSesion();
+    }
   }
 
   return { usuario, estaAutenticado, login, cargarToken, cerrarSesion };

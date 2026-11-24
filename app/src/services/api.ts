@@ -29,6 +29,43 @@ export interface OpcionesApi {
  *  8. En cualquier otro caso, devolver el cuerpo JSON.
  */
 export async function api<T = unknown>(ruta: string, opciones: OpcionesApi = {}): Promise<T> {
-  void [ErrorApi, obtenerToken, olvidarSesion, router, BASE_URL, TIEMPO_MAXIMO_MS, ruta, opciones];
-  throw new Error('TODO [M1] api() sin implementar');
+  const url = new URL(`${BASE_URL}${ruta}`);
+  for (const [clave, valor] of Object.entries(opciones.params ?? {})) {
+    if (valor !== undefined && valor !== '') url.searchParams.set(clave, String(valor));
+  }
+
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  const token = obtenerToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const init: RequestInit = { method: opciones.method ?? 'GET', headers };
+  if (opciones.body !== undefined) {
+    headers['Content-Type'] = 'application/json';
+    init.body = JSON.stringify(opciones.body);
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), TIEMPO_MAXIMO_MS);
+  let respuesta: Response;
+  let texto: string;
+  try {
+    respuesta = await fetch(url, { ...init, signal: controller.signal });
+    // El límite de tiempo también cubre la descarga del cuerpo.
+    texto = await respuesta.text();
+  } catch {
+    throw new ErrorApi(0, { mensaje: 'No fue posible conectar con la API.' });
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  if (respuesta.status === 204) return null as T;
+  let cuerpo: unknown;
+  try { cuerpo = JSON.parse(texto); } catch { cuerpo = null; }
+  if (!respuesta.ok) {
+    if (respuesta.status === 401 && ruta !== '/login') {
+      await olvidarSesion();
+      await router.replace('/login');
+    }
+    throw new ErrorApi(respuesta.status, cuerpo);
+  }
+  return cuerpo as T;
 }
